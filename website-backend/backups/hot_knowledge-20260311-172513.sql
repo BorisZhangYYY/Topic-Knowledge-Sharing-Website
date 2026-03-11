@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict XlCglUY93PMtk7fjsG2q6CCzsm8uNNbXlZbCHSceTB428WhVuzVvQrnRgcDISra
+\restrict zUfOZUyLhqtaKDRijJJdTHiUZ3MUcgxumuve8TsBg4NwAmegMxV7OAJcbB65gEf
 
 -- Dumped from database version 18.3 (Homebrew)
 -- Dumped by pg_dump version 18.3 (Homebrew)
@@ -73,6 +73,7 @@ ALTER TABLE ONLY public.user_info ALTER COLUMN id SET DEFAULT nextval('public.us
 COPY public.user_info (id, username, password_hash, created_at) FROM stdin;
 1	demo_user3	scrypt:32768:8:1$v9ePivlOJdv7OLLb$4463f05a564c89206d7432cd8a8ee4a87e2c59b4d1afa11c82b05b1392ae17c220ebf8615a3ac9020521441809cdc6df7ee5c96d7b70e53be9716c75aca4013b	2026-03-11 11:09:49.455024+08
 2	boris_demo_001	scrypt:32768:8:1$RxN4KvWkgUxoZh2G$388c2a728b5a8e8d7def7d78dc23e3998adb4f6002401fb484a95a206b02b1014b8b93caea4c5886320c12c3080792f3bb41a9bbd288ed1d890787742f4c105f	2026-03-11 13:38:02.107866+08
+4	demo_user2	scrypt:32768:8:1$tl4A5lpcL3ijPS1b$2878f2d2e4ce3212c456f7e5cd0f2943fa4298f243c647a689191785cf61024a6a4ba239792c785bb14e0fae091e8fae6e49f2b984fe3c6ee1bb54a6456b03cc	2026-03-11 16:56:41.361795+08
 \.
 
 
@@ -80,7 +81,7 @@ COPY public.user_info (id, username, password_hash, created_at) FROM stdin;
 -- Name: user_info_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.user_info_id_seq', 2, true);
+SELECT pg_catalog.setval('public.user_info_id_seq', 7, true);
 
 
 --
@@ -103,5 +104,5 @@ ALTER TABLE ONLY public.user_info
 -- PostgreSQL database dump complete
 --
 
-\unrestrict XlCglUY93PMtk7fjsG2q6CCzsm8uNNbXlZbCHSceTB428WhVuzVvQrnRgcDISra
+\unrestrict zUfOZUyLhqtaKDRijJJdTHiUZ3MUcgxumuve8TsBg4NwAmegMxV7OAJcbB65gEf
 
