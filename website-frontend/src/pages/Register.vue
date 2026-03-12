@@ -25,10 +25,16 @@ async function onSubmit() {
 
   loading.value = true
   try {
+    if (!email.value.trim()) {
+      errorText.value = 'Email is required for password recovery.'
+      loading.value = false
+      return
+    }
+
     const { status, body } = await register(
       username.value.trim(),
       password.value,
-      email.value.trim() || undefined,
+      email.value.trim(),
     )
 
     if (status === 201) {
@@ -108,7 +114,7 @@ async function onSubmit() {
         </label>
 
         <label class="field">
-          <span class="label">Email <span class="optional">(optional)</span></span>
+          <span class="label">Email <span class="required">*</span></span>
           <input
             v-model="email"
             class="input"
@@ -116,8 +122,9 @@ async function onSubmit() {
             placeholder="you@example.com"
             autocomplete="email"
             :disabled="loading || !!successText"
+            required
           />
-          <span class="hint">Used for password recovery. You can add this later.</span>
+          <span class="hint">Used for password recovery. Please provide a valid email address.</span>
         </label>
 
         <button class="btn" type="submit" :disabled="loading || !!successText">
