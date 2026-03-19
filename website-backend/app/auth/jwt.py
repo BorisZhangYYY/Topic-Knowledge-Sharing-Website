@@ -12,16 +12,16 @@ def create_access_token(
     expires_in_seconds: int = 7 * 24 * 60 * 60,
     extra_claims: Optional[Dict[str, Any]] = None,
 ) -> str:
-    """Create a JWT access token.
+    """创建 JWT 访问令牌。
 
     Args:
-        subject: Subject identifier, typically user id or username.
-        secret_key: JWT signing secret.
-        expires_in_seconds: Token TTL.
-        extra_claims: Optional extra claims to embed into token.
+        subject: 主题标识符，通常是用户 ID 或用户名。
+        secret_key: JWT 签名密钥。
+        expires_in_seconds: 令牌有效期（秒）。
+        extra_claims: 可选的额外声明，嵌入到令牌中。
 
     Returns:
-        Encoded JWT string.
+        编码后的 JWT 字符串。
     """
     now = datetime.now(timezone.utc)
     payload: Dict[str, Any] = {
@@ -36,14 +36,14 @@ def create_access_token(
 
 
 def decode_token(token: str, secret_key: str) -> Dict[str, Any]:
-    """Decode and verify a JWT token.
+    """解码并验证 JWT 令牌。
 
     Args:
-        token: Encoded JWT token.
-        secret_key: JWT signing secret.
+        token: 编码后的 JWT 令牌。
+        secret_key: JWT 签名密钥。
 
     Returns:
-        Decoded token payload.
+        解码后的令牌负载。
     """
     payload: Dict[str, Any] = jwt.decode(token, secret_key, algorithms=["HS256"])
     return payload

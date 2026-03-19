@@ -5,19 +5,19 @@ from typing import Tuple
 
 
 def validate_username(username: str) -> Tuple[bool, str]:
-    """Validate a username string.
+    """验证用户名字符串。
 
-    Rules:
-    - Length must be between 3 and 30 characters (inclusive).
-    - Only alphanumeric characters and underscores are allowed.
-    - Must start with a letter (a-z or A-Z).
+    规则：
+    - 长度必须在 3 到 30 个字符之间（包含）。
+    - 只允许使用字母、数字和下划线。
+    - 必须以字母开头（a-z 或 A-Z）。
 
     Args:
-        username: The username string to validate.
+        username: 要验证的用户名字符串。
 
     Returns:
-        A tuple of (is_valid, error_message). If is_valid is True,
-        error_message is an empty string.
+        一个元组 (is_valid, error_message)。如果 is_valid 为 True，
+        则 error_message 为空字符串。
     """
     if not username:
         return False, "Username is required"
@@ -38,20 +38,20 @@ def validate_username(username: str) -> Tuple[bool, str]:
 
 
 def validate_password(password: str) -> Tuple[bool, str]:
-    """Validate a password string.
+    """验证密码字符串。
 
-    Rules:
-    - Minimum 8 characters.
-    - At least one uppercase letter (A-Z).
-    - At least one lowercase letter (a-z).
-    - At least one digit (0-9).
+    规则：
+    - 最少 8 个字符。
+    - 至少一个大写字母（A-Z）。
+    - 至少一个小写字母（a-z）。
+    - 至少一个数字（0-9）。
 
     Args:
-        password: The plaintext password string to validate.
+        password: 要验证的明文密码字符串。
 
     Returns:
-        A tuple of (is_valid, error_message). If is_valid is True,
-        error_message is an empty string.
+        一个元组 (is_valid, error_message)。如果 is_valid 为 True，
+        则 error_message 为空字符串。
     """
     if not password:
         return False, "Password is required"
@@ -72,23 +72,23 @@ def validate_password(password: str) -> Tuple[bool, str]:
 
 
 def validate_email(email: str) -> Tuple[bool, str]:
-    """Validate an email address string.
+    """验证邮箱地址字符串。
 
-    Performs a basic format check: expects a non-empty local part,
-    an ``@`` symbol, a non-empty domain with at least one dot, and a
-    top-level domain of at least two characters.
+    执行基本格式检查：需要非空的本地部分、
+    ``@`` 符号、至少包含一个点的非空域名，
+    以及至少两个字符的顶级域名。
 
     Args:
-        email: The email address string to validate.
+        email: 要验证的邮箱地址字符串。
 
     Returns:
-        A tuple of (is_valid, error_message). If is_valid is True,
-        error_message is an empty string.
+        一个元组 (is_valid, error_message)。如果 is_valid 为 True，
+        则 error_message 为空字符串。
     """
     if not email:
         return False, "Email is required"
 
-    # Basic email regex: local@domain.tld
+    # 基本邮箱正则表达式：local@domain.tld
     pattern = r'^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$'
     if not re.match(pattern, email):
         return False, "Invalid email address format"

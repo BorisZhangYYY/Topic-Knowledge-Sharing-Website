@@ -16,28 +16,28 @@ from app.db.user_info_model import USERS_TABLE_NAME
 
 
 class RegisterResource(Resource):
-    """User registration resource.
+    """用户注册资源。
 
     POST /api/auth/register
     -----------------------
-    Accepts a JSON body with the following fields:
+    接受包含以下字段的 JSON 请求体：
 
-    Required:
-        username (str): 3-30 chars, alphanumeric + underscores, starts with a letter.
-        password (str): min 8 chars, >=1 uppercase, >=1 lowercase, >=1 digit.
-        email (str): valid email address, used for password recovery.
+    必需字段：
+        username (str): 3-30 个字符，字母数字加下划线，以字母开头。
+        password (str): 最少 8 个字符，至少 1 个大写字母，至少 1 个小写字母，至少 1 个数字。
+        email (str): 有效的邮箱地址，用于密码找回。
 
-    Returns 201 on success with a JWT access token.
-    Returns 400 on validation errors.
-    Returns 409 when the username or email already exists.
-    Returns 500 on unexpected database errors.
+    成功时返回 201 和 JWT 访问令牌。
+    验证错误时返回 400。
+    用户名或邮箱已存在时返回 409。
+    数据库意外错误时返回 500。
     """
 
     def post(self) -> Tuple[Dict[str, Any], int]:
-        """Register a new user.
+        """注册新用户。
 
         Returns:
-            A tuple of (json_body, http_status_code).
+            (json_body, http_status_code) 的元组。
         """
         payload: Any = request.get_json(silent=True)
 
