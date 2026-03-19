@@ -12,10 +12,10 @@ from app.resources.auth_resources import (
 
 
 def register_api_resources(api: Api) -> None:
-    """Register API resources on the Flask-RESTful Api.
+    """在 Flask-RESTful Api 上注册 API 资源。
 
     Args:
-        api: Flask-RESTful Api instance.
+        api: Flask-RESTful Api 实例。
     """
     api.add_resource(RegisterResource,     "/api/auth/register")
     api.add_resource(LoginResource,        "/api/auth/login")

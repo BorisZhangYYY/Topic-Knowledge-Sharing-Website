@@ -11,18 +11,18 @@ from app.db.user_schema_migration import (
 
 
 # ---------------------------------------------------------------------------
-# Internal helpers
+# 内部辅助函数
 # ---------------------------------------------------------------------------
 
 
 def _ensure_migrations_table(conn: "psycopg.Connection") -> None:  # type: ignore[name-defined]
-    """Create the schema_migrations tracking table if it does not exist."""
+    """如果不存在，则创建 schema_migrations 跟踪表。"""
     with conn.cursor() as cur:
         cur.execute(CREATE_SCHEMA_MIGRATIONS_TABLE_SQL)
 
 
 def _get_applied_versions(conn: "psycopg.Connection") -> List[int]:  # type: ignore[name-defined]
-    """Return a list of already-applied migration version numbers."""
+    """返回已应用的迁移版本号列表。"""
     with conn.cursor() as cur:
         cur.execute("SELECT version FROM schema_migrations ORDER BY version")
         rows = cur.fetchall()
@@ -30,7 +30,7 @@ def _get_applied_versions(conn: "psycopg.Connection") -> List[int]:  # type: ign
 
 
 def _record_migration(conn: "psycopg.Connection", version: int) -> None:  # type: ignore[name-defined]
-    """Insert a version record into schema_migrations."""
+    """向 schema_migrations 插入版本记录。"""
     with conn.cursor() as cur:
         cur.execute(
             "INSERT INTO schema_migrations (version) VALUES (%s) ON CONFLICT DO NOTHING",
@@ -39,11 +39,10 @@ def _record_migration(conn: "psycopg.Connection", version: int) -> None:  # type
 
 
 def _apply_parts(conn: "psycopg.Connection", parts: "tuple[str, ...]") -> None:  # type: ignore[name-defined]
-    """Execute each SQL part individually using the provided connection.
+    """使用提供的连接逐个执行每个 SQL 部分。
 
-    psycopg v3 sends each ``execute()`` call as a single query, so
-    multi-statement strings must be split into individual parts before
-    calling this function.
+    psycopg v3 将每个 ``execute()`` 调用作为单个查询发送，因此
+    多语句字符串必须在调用此函数之前拆分为单独的部分。
     """
     with conn.cursor() as cur:
         for part in parts:
@@ -53,22 +52,22 @@ def _apply_parts(conn: "psycopg.Connection", parts: "tuple[str, ...]") -> None: 
 
 
 # ---------------------------------------------------------------------------
-# Public API
+# 公共 API
 # ---------------------------------------------------------------------------
 
 
 def run_migrations() -> None:
-    """Apply all pending versioned migrations in order.
+    """按顺序应用所有待处理的版本化迁移。
 
-    Algorithm
+    算法
     ---------
-    1. Open a single connection for the entire migration run.
-    2. Ensure the ``schema_migrations`` tracking table exists.
-    3. Fetch already-applied version numbers.
-    4. For each migration ``(version, sql_parts)`` in ``MIGRATIONS``, skip it
-       if its version is already recorded; otherwise execute every SQL part in
-       order and record the version — all within the same autocommit-style
-       transaction that psycopg v3 commits on context-manager exit.
+    1. 为整个迁移运行打开单个连接。
+    2. 确保 ``schema_migrations`` 跟踪表存在。
+    3. 获取已应用的版本号。
+    4. 对于 ``MIGRATIONS`` 中的每个迁移 ``(version, sql_parts)``，如果
+       其版本已被记录则跳过；否则按顺序执行每个 SQL 部分并记录
+       版本 —— 全部在 psycopg v3 在上下文管理器退出时提交的同一
+       自动提交风格事务中完成。
     """
     with get_db_connection() as conn:
         _ensure_migrations_table(conn)
@@ -82,11 +81,10 @@ def run_migrations() -> None:
 
 
 def ensure_users_table_exists() -> None:
-    """Compatibility shim: create user_info table if it does not exist.
+    """兼容性适配：如果不存在则创建 user_info 表。
 
-    Prefer calling :func:`run_migrations` instead, which handles the full
-    versioned schema.  This function is kept so that existing call-sites
-    continue to work without modification.
+    建议优先调用 :func:`run_migrations`，它处理完整的版本化 schema。
+    保留此函数是为了使现有调用点无需修改即可继续工作。
     """
     with get_db_connection() as conn:
         with conn.cursor() as cur:
@@ -94,15 +92,15 @@ def ensure_users_table_exists() -> None:
 
 
 def init_schema(ddls: "Iterable[str] | None" = None) -> None:  # type: ignore[name-defined]
-    """Initialize DB schema.
+    """初始化数据库 schema。
 
-    When *ddls* is ``None`` the versioned migration runner is used.
-    When an explicit iterable of DDL strings is provided each one is applied
-    directly (legacy behaviour, useful in tests).
+    当 *ddls* 为 ``None`` 时使用版本化迁移运行器。
+    当提供显式的 DDL 字符串可迭代对象时，直接应用每个 DDL
+    （遗留行为，在测试中很有用）。
 
     Args:
-        ddls: Optional iterable of raw DDL strings.  Pass ``None`` to run the
-              full versioned migration suite.
+        ddls: 可选的原始 DDL 字符串可迭代对象。传入 ``None`` 则运行
+              完整的版本化迁移套件。
     """
     if ddls is None:
         run_migrations()

@@ -7,13 +7,13 @@ from app.routes import register_api_resources
 
 
 def create_api(app: Flask) -> Api:
-    """Create a Flask-RESTful Api and register all resources.
+    """创建 Flask-RESTful Api 并注册所有资源。
 
     Args:
-        app: Flask application instance.
+        app: Flask 应用实例。
 
     Returns:
-        A Flask-RESTful Api instance.
+        Flask-RESTful Api 实例。
     """
     api = Api(app)
     register_api_resources(api)

@@ -14,11 +14,11 @@ from app.resources.auth_resources.email_verify_resource import is_otp_valid, otp
 
 
 class ResetPasswordResource(Resource):
-    """Password reset resource.
+    """密码重置资源。
 
     POST /api/auth/reset_success
     ----------------------------
-    Accepts a JSON body::
+    接受 JSON 请求体::
 
         {
             "email":        "user@example.com",
@@ -26,39 +26,38 @@ class ResetPasswordResource(Resource):
             "new_password": "NewPass1"
         }
 
-    Behaviour
+    行为
     ---------
-    1. Validates all three fields are present and non-empty.
-    2. Validates ``email`` format.
-    3. Validates the OTP against the in-memory :data:`otp_store` (must be
-       correct and not expired).
-    4. Validates ``new_password`` strength rules (>=8 chars, >=1 upper,
-       >=1 lower, >=1 digit).
-    5. Looks up the user by email; returns 404 when no account is found.
-    6. Verifies the new password is **different** from the current one.
-    7. Updates ``password_hash`` in the database inside an explicit
-       transaction.
-    8. Clears the OTP entry from :data:`otp_store`.
+    1. 验证所有三个字段都存在且非空。
+    2. 验证 ``email`` 格式。
+    3. 验证内存中 :data:`otp_store` 的 OTP（必须
+       正确且未过期）。
+    4. 验证 ``new_password`` 强度规则（>=8 字符，>=1 大写，
+       >=1 小写，>=1 数字）。
+    5. 通过邮箱查找用户；当未找到账户时返回 404。
+    6. 验证新密码与当前密码**不同**。
+    7. 在显式事务中更新数据库中的 ``password_hash``。
+    8. 从 :data:`otp_store` 中清除 OTP 记录。
 
     Returns
     -------
     200  ``{"message": "ok", "detail": "password_reset_success"}``
-    400  Validation error (missing fields, bad email, weak password, same
-         password, invalid / expired OTP).
-    404  No account registered with that email.
-    500  Unexpected database error.
+    400  验证错误（缺少字段、邮箱格式错误、密码强度不足、密码相同、
+         OTP 无效或过期）。
+    404  该邮箱未注册账户。
+    500  意外的数据库错误。
     """
 
     def post(self) -> Tuple[Dict[str, Any], int]:
-        """Reset a user's password after OTP verification.
+        """OTP 验证后重置用户密码。
 
         Returns:
-            A tuple of (json_body, http_status_code).
+            (json_body, http_status_code) 元组。
         """
         payload: Any = request.get_json(silent=True)
 
         # ------------------------------------------------------------------
-        # 1. Payload structure check
+        # 1. 请求体结构检查
         # ------------------------------------------------------------------
         ok, errors = require_json_fields(payload, ("email", "otp_code", "new_password"))
         if not ok:
@@ -69,7 +68,7 @@ class ResetPasswordResource(Resource):
         new_password: str = str(payload["new_password"])
 
         # ------------------------------------------------------------------
-        # 3. Email format validation
+        # 3. 邮箱格式验证
         # ------------------------------------------------------------------
         valid_email, email_err = validate_email(email)
         if not valid_email:
@@ -79,8 +78,8 @@ class ResetPasswordResource(Resource):
             }, 400
 
         # ------------------------------------------------------------------
-        # 4. OTP validation (must come before password checks to avoid
-        #    leaking whether the account exists via error ordering)
+        # 4. OTP 验证（必须在密码检查之前进行，以避免
+        #    通过错误顺序泄露账户是否存在）
         # ------------------------------------------------------------------
         if not is_otp_valid(email, otp_code):
             return {
@@ -89,7 +88,7 @@ class ResetPasswordResource(Resource):
             }, 400
 
         # ------------------------------------------------------------------
-        # 5. New password strength validation
+        # 5. 新密码强度验证
         # ------------------------------------------------------------------
         valid_password, password_err = validate_password(new_password)
         if not valid_password:
@@ -99,7 +98,7 @@ class ResetPasswordResource(Resource):
             }, 400
 
         # ------------------------------------------------------------------
-        # 6. Fetch the user record by email
+        # 6. 通过邮箱获取用户记录
         # ------------------------------------------------------------------
         try:
             with get_db_connection() as conn:
@@ -126,7 +125,7 @@ class ResetPasswordResource(Resource):
         current_password_hash: str = str(row[1])
 
         # ------------------------------------------------------------------
-        # 7. Ensure the new password differs from the existing one
+        # 7. 确保新密码与现有密码不同
         # ------------------------------------------------------------------
         if verify_password(new_password, current_password_hash):
             return {
@@ -137,7 +136,7 @@ class ResetPasswordResource(Resource):
             }, 400
 
         # ------------------------------------------------------------------
-        # 8. Persist the new password hash inside an explicit transaction
+        # 8. 在显式事务中持久化新的密码哈希
         # ------------------------------------------------------------------
         new_password_hash: str = hash_password(new_password)
 
@@ -157,7 +156,7 @@ class ResetPasswordResource(Resource):
             return {"message": "database_error", "detail": str(exc)}, 500
 
         # ------------------------------------------------------------------
-        # 9. Invalidate the OTP so it cannot be reused
+        # 9. 使 OTP 失效，防止重复使用
         # ------------------------------------------------------------------
         otp_store.pop(email, None)
 

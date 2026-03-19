@@ -8,67 +8,63 @@ from flask_restful import Resource
 from app.auth.middleware import require_auth
 
 # ---------------------------------------------------------------------------
-# In-memory token blacklist
+# 内存中的 Token 黑名单
 # ---------------------------------------------------------------------------
-# A simple set of raw JWT strings that have been explicitly invalidated via
-# logout.  On server restart the set is cleared — that is acceptable for a
-# v0.5 dev build where there is no Redis / persistent store yet.
+# 一个简单的原始 JWT 字符串集合，用于存储已通过登出显式失效的 token。
+# 服务器重启时该集合会被清空 —— 这对于没有 Redis / 持久化存储的 v0.5 开发版本来说是可以接受的。
 #
-# The require_auth middleware does NOT currently consult this blacklist
-# automatically; the check is intentionally kept here in the logout resource
-# so that the blacklist concern stays co-located and can be extracted to a
-# shared auth layer once a proper token store (e.g. Redis) is available.
+# require_auth 中间件目前不会自动检查此黑名单；检查被故意保留在登出资源中，
+# 以便黑名单相关的逻辑保持集中，一旦有了合适的 token 存储（如 Redis），
+# 就可以方便地提取到共享的认证层。
 # ---------------------------------------------------------------------------
 
 token_blacklist: Set[str] = set()
 
 
 def is_token_blacklisted(token: str) -> bool:
-    """Return ``True`` if *token* has been blacklisted by a previous logout.
+    """如果 *token* 已被之前的登出操作列入黑名单，则返回 ``True``。
 
     Args:
-        token: The raw JWT string to check.
+        token: 要检查的原始 JWT 字符串。
 
     Returns:
-        ``True`` when the token is in :data:`token_blacklist`.
+        当 token 在 :data:`token_blacklist` 中时返回 ``True``。
     """
     return token in token_blacklist
 
 
 class LogoutResource(Resource):
-    """User logout resource.
+    """用户登出资源。
 
     POST /api/auth/logout
     ---------------------
-    Requires a valid ``Authorization: Bearer <token>`` header (enforced by
-    the :func:`~app.auth.middleware.require_auth` decorator).
+    需要有效的 ``Authorization: Bearer <token>`` 请求头（由
+    :func:`~app.auth.middleware.require_auth` 装饰器强制执行）。
 
-    Behaviour
+    行为
     ---------
-    - Extracts the raw JWT from the ``Authorization`` header.
-    - Adds it to the module-level :data:`token_blacklist` set so subsequent
-      requests carrying the same token can be rejected.
-    - Returns a success response immediately; the token is considered
-      invalidated from this point onward.
+    - 从 ``Authorization`` 请求头中提取原始 JWT。
+    - 将其添加到模块级别的 :data:`token_blacklist` 集合中，以便后续
+      携带相同 token 的请求可以被拒绝。
+    - 立即返回成功响应；token 从此刻起被视为已失效。
 
     Returns
     -------
     200  ``{"message": "ok", "detail": "logged_out"}``
-    401  Missing / invalid / expired token (handled by ``require_auth``).
+    401  缺少 / 无效 / 过期的 token（由 ``require_auth`` 处理）。
     """
 
     @require_auth
     def post(self) -> Tuple[Dict[str, Any], int]:
-        """Blacklist the caller's JWT and confirm logout.
+        """将调用者的 JWT 列入黑名单并确认登出。
 
         Returns:
-            A tuple of (json_body, http_status_code).
+            一个 (json_body, http_status_code) 元组。
         """
-        # require_auth has already validated the token at this point, so we
-        # can safely extract the raw string from the header without
-        # re-checking it.
+        # require_auth 此时已经验证了 token，因此我们可以
+        # 安全地从请求头中提取原始字符串而无需再次检查。
         auth_header: str = request.headers.get("Authorization", "")
-        # Header format guaranteed by require_auth: "Bearer <token>"
+        # 请求头格式由 require_auth 保证："Bearer <token>"
         parts = auth_header.split()
         token: str = parts[1] if len(parts) == 2 else ""
 

@@ -6,7 +6,7 @@ from .load_global_conf import get_conf_bool, get_conf_int, get_conf_str, build_p
 
 
 class Config:
-    """Flask application configuration."""
+    """Flask 应用配置。"""
 
     DEBUG: bool = get_conf_bool("flask", "debug", "FLASK_DEBUG", False)
     TESTING: bool = False

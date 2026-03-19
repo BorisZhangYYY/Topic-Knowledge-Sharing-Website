@@ -1,44 +1,44 @@
 """
-pg_snapshot.py - PostgreSQL snapshot export/import helper
+pg_snapshot.py - PostgreSQL 快照导出/导入辅助工具
 
-Usage
------
-- Export (dump the database to a SQL file)
+用法
+----
+- 导出（将数据库转储为 SQL 文件）
     python website-backend/scripts/pg_snapshot.py export \
       --conf website-backend/conf/global.conf \
       [--host HOST --port PORT --user USER --password PASS --db DB] \
       [--out /path/to/dump.sql]
 
-- Import (restore the SQL file into a target database)
+- 导入（将 SQL 文件恢复到目标数据库）
     python website-backend/scripts/pg_snapshot.py import \
       --conf website-backend/conf/global.conf \
       [--host HOST --port PORT --user USER --password PASS --db DB] \
       --in /path/to/dump.sql
 
-Behavior
+行为说明
 --------
-- By default, reads [postgres] from website-backend/conf/global.conf.
-  CLI arguments override values when provided.
-- Import step verifies and aligns the target environment with conf:
-  * Ensures role USER exists (creates it and sets password if needed).
-  * Ensures database DB exists and is owned by USER (creates/changes owner).
-- Requires pg_dump and psql to be available in PATH.
-- Passwords are passed via PGPASSWORD, never echoed to the console.
+- 默认从 website-backend/conf/global.conf 读取 [postgres] 配置。
+  当提供 CLI 参数时，会覆盖配置文件中的值。
+- 导入步骤会验证目标环境并与配置保持一致：
+  * 确保角色 USER 存在（如需要则创建并设置密码）。
+  * 确保数据库 DB 存在且归 USER 所有（创建/更改所有者）。
+- 要求 pg_dump 和 psql 在 PATH 中可用。
+- 密码通过 PGPASSWORD 传递，绝不会输出到控制台。
 
-Examples
---------
-- Export using conf defaults:
+示例
+----
+- 使用配置默认值导出：
     python website-backend/scripts/pg_snapshot.py export \
       --conf website-backend/conf/global.conf \
       --out /tmp/hot_knowledge.sql
 
-- Import on another machine:
+- 在另一台机器上导入：
     python website-backend/scripts/pg_snapshot.py import \
       --conf website-backend/conf/global.conf \
       --in /tmp/hot_knowledge.sql
 """
 from __future__ import annotations
- 
+
 
 import argparse
 import os
@@ -165,7 +165,7 @@ def _can_connect(user: str, db: str, host: str, port: int, password: str) -> boo
 
 
 def _ensure_role_and_db(cfg: PgConfig) -> None:
-    # Try connecting as cfg.user first; if fails, try 'postgres' superuser without password as a common default.
+    # 首先尝试以 cfg.user 连接；如果失败，尝试以 'postgres' 超级用户无密码方式连接作为常用默认值。
     candidates = [
         (cfg.user, "postgres", cfg.password),
         ("postgres", "postgres", os.getenv("PGPASSWORD", "")),
@@ -179,11 +179,11 @@ def _ensure_role_and_db(cfg: PgConfig) -> None:
             break
     if admin_user is None:
         raise RuntimeError(
-            "Cannot connect to target PostgreSQL to prepare role/database. "
-            "Tried: user=<cfg.user> and user=postgres. Configure credentials or set PGPASSWORD."
+            "无法连接到目标 PostgreSQL 以准备角色/数据库。"
+            "已尝试：user=<cfg.user> 和 user=postgres。请配置凭据或设置 PGPASSWORD。"
         )
 
-    # Ensure role exists
+    # 确保角色存在
     check_role = _run_psql(
         f"SELECT 1 FROM pg_roles WHERE rolname = {shlex.quote(cfg.user)!s};",
         user=admin_user,
@@ -196,16 +196,16 @@ def _ensure_role_and_db(cfg: PgConfig) -> None:
     if not role_exists:
         pw_clause = f" PASSWORD {shlex.quote(cfg.password)}" if cfg.password else ""
         create_role_sql = f"CREATE ROLE {cfg.user} LOGIN{pw_clause};"
-        print(f"[info] Creating role '{cfg.user}'")
+        print(f"[info] 创建角色 '{cfg.user}'")
         proc = _run_psql(create_role_sql, user=admin_user, db="postgres", host=cfg.host, port=cfg.port, password=admin_pw)
         if proc.returncode != 0:
-            raise RuntimeError(f"Failed to create role {cfg.user}: {proc.stderr.strip()}")
+            raise RuntimeError(f"创建角色 {cfg.user} 失败：{proc.stderr.strip()}")
     else:
         if cfg.password:
             alter_sql = f"ALTER ROLE {cfg.user} WITH LOGIN PASSWORD {shlex.quote(cfg.password)};"
             _run_psql(alter_sql, user=admin_user, db="postgres", host=cfg.host, port=cfg.port, password=admin_pw)
 
-    # Ensure database exists and ownership
+    # 确保数据库存在且所有权正确
     check_db = _run_psql(
         f"SELECT 1 FROM pg_database WHERE datname = {shlex.quote(cfg.db)!s};",
         user=admin_user,
@@ -216,13 +216,13 @@ def _ensure_role_and_db(cfg: PgConfig) -> None:
     )
     db_exists = check_db.returncode == 0 and "1" in check_db.stdout
     if not db_exists:
-        print(f"[info] Creating database '{cfg.db}' owned by '{cfg.user}'")
+        print(f"[info] 创建数据库 '{cfg.db}'，所有者为 '{cfg.user}'")
         create_db_sql = f"CREATE DATABASE {cfg.db} OWNER {cfg.user};"
         proc = _run_psql(create_db_sql, user=admin_user, db="postgres", host=cfg.host, port=cfg.port, password=admin_pw)
         if proc.returncode != 0:
-            raise RuntimeError(f"Failed to create database {cfg.db}: {proc.stderr.strip()}")
+            raise RuntimeError(f"创建数据库 {cfg.db} 失败：{proc.stderr.strip()}")
     else:
-        # Ensure ownership
+        # 确保所有权
         owner_q = _run_psql(
             f"SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = {shlex.quote(cfg.db)!s};",
             user=admin_user,
@@ -233,7 +233,7 @@ def _ensure_role_and_db(cfg: PgConfig) -> None:
         )
         owner = owner_q.stdout.strip()
         if owner and owner != cfg.user:
-            print(f"[info] Changing owner of database '{cfg.db}' from '{owner}' to '{cfg.user}'")
+            print(f"[info] 更改数据库 '{cfg.db}' 的所有者，从 '{owner}' 改为 '{cfg.user}'")
             _run_psql(
                 f"ALTER DATABASE {cfg.db} OWNER TO {cfg.user};",
                 user=admin_user,
@@ -286,11 +286,11 @@ def main() -> int:
         return 0
 
     if args.command == "import":
-        print("[info] Verifying target matches conf (role/database)...")
+        print("[info] 验证目标环境与配置一致（角色/数据库）...")
         _ensure_role_and_db(cfg)
-        print("[info] Importing SQL file...")
+        print("[info] 正在导入 SQL 文件...")
         import_db(cfg, Path(args.in_file))
-        print("[info] Import completed")
+        print("[info] 导入完成")
         return 0
 
     return 2

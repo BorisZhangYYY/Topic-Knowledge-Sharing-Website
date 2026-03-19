@@ -19,16 +19,16 @@ except Exception:  # pragma: no cover
 
 
 def create_app() -> Flask:
-    """Create and configure the Flask application.
+    """创建并配置 Flask 应用。
 
     Returns:
-        A configured Flask application instance.
+        配置好的 Flask 应用实例。
     """
     return app
 
 @app.get("/")
 def index() -> Response:
-    """Return basic application information."""
+    """返回基本应用信息。"""
     payload: Dict[str, Any] = {
         "app": "hot-knowledge-backend",
         "debug": app.config.get("DEBUG", False),
@@ -39,12 +39,12 @@ def index() -> Response:
 
 @app.get("/healthz")
 def healthz() -> Response:
-    """Return application health status."""
+    """返回应用健康状态。"""
     payload: Dict[str, str] = {"status": "ok"}
     return jsonify(payload)
 
 def _db_connect() -> "psycopg.Connection[Any]":  # type: ignore[name-defined]
-    """Create a new database connection using the configured DSN."""
+    """使用配置的 DSN 创建新的数据库连接。"""
     if psycopg is None:
         raise RuntimeError("psycopg is not installed")
     dsn = str(app.config.get("DATABASE_DSN", ""))
@@ -52,7 +52,7 @@ def _db_connect() -> "psycopg.Connection[Any]":  # type: ignore[name-defined]
 
 @app.get("/db/health")
 def db_health() -> Response:
-    """Perform a simple PostgreSQL health check using SELECT 1."""
+    """使用 SELECT 1 执行简单的 PostgreSQL 健康检查。"""
     try:
         with _db_connect() as conn:
             with conn.cursor() as cur:

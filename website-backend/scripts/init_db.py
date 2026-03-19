@@ -1,39 +1,39 @@
 """
-init_db.py - Database initialisation helper
+init_db.py - 数据库初始化助手
 
-Resets the target database to a clean state, re-applies all schema migrations,
-and seeds a default admin user.
+将目标数据库重置为干净状态，重新应用所有模式迁移，
+并创建一个默认管理员用户。
 
-Usage
------
-    # Use conf/global.conf defaults (recommended)
+使用方式
+--------
+    # 使用 conf/global.conf 默认值（推荐）
     python website-backend/scripts/init_db.py
 
-    # Override specific fields
+    # 覆盖特定字段
     python website-backend/scripts/init_db.py \
         --conf website-backend/conf/global.conf \
         --admin-username admin \
         --admin-password Admin1234! \
         --admin-email admin@example.com
 
-    # Dry-run: show what would happen without executing
+    # 试运行：显示将要执行的操作而不实际执行
     python website-backend/scripts/init_db.py --dry-run
 
-Steps performed
----------------
-1. Connect to the database defined in global.conf (or via CLI flags).
-2. Take an automatic backup snapshot to backups/ before touching anything.
-3. Drop all application tables (user_info, schema_migrations) so we start fresh.
-4. Re-run all versioned migrations via migration.py → rebuilds the full schema.
-5. Seed one default admin user (username / password / email configurable).
-6. Print a summary of what was done.
+执行步骤
+--------
+1. 连接到 global.conf 中定义的数据库（或通过 CLI 参数指定）。
+2. 在操作之前自动备份快照到 backups/ 目录。
+3. 删除所有应用表（user_info, schema_migrations），重新开始。
+4. 通过 migration.py 重新运行所有版本化迁移 → 重建完整模式。
+5. 创建一个默认管理员用户（用户名/密码/邮箱可配置）。
+6. 打印执行摘要。
 
-Safety
+安全性
 ------
-- Requires explicit --yes flag (or interactive confirmation) to prevent
-  accidental data loss in production.
-- Always creates a backup snapshot first (uses pg_snapshot.py logic).
-- Never hard-codes credentials; reads from conf or environment variables.
+- 需要显式的 --yes 标志（或交互式确认）以防止
+  在生产环境中意外丢失数据。
+- 始终首先创建备份快照（使用 pg_snapshot.py 逻辑）。
+- 从不硬编码凭据；从配置文件或环境变量读取。
 """
 from __future__ import annotations
 
@@ -47,8 +47,8 @@ from pathlib import Path
 from typing import Optional
 
 # ---------------------------------------------------------------------------
-# Make sure the backend root is on sys.path so we can import app modules
-# even when the script is run from the project root.
+# 确保后端根目录在 sys.path 中，以便我们可以从项目根目录运行脚本时
+# 导入应用模块。
 # ---------------------------------------------------------------------------
 SCRIPT_DIR = Path(__file__).resolve().parent          # scripts/
 BACKEND_DIR = SCRIPT_DIR.parent                        # website-backend/
@@ -57,7 +57,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 
 # ---------------------------------------------------------------------------
-# Config loading  (mirrors pg_snapshot.py approach)
+# 配置加载（采用与 pg_snapshot.py 相同的方法）
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -98,12 +98,12 @@ def load_pg_config(
 
 
 # ---------------------------------------------------------------------------
-# Snapshot helper  (re-uses pg_snapshot.export_db)
+# 快照助手（复用 pg_snapshot.export_db）
 # ---------------------------------------------------------------------------
 
 def _take_backup(cfg: PgConfig, backup_dir: Path) -> Path:
-    """Export a full SQL snapshot before we touch anything."""
-    # Import here so the script can still run even if pg_snapshot has issues
+    """在操作之前导出完整的 SQL 快照。"""
+    # 在此处导入，以便即使 pg_snapshot 有问题，脚本仍然可以运行
     from scripts.pg_snapshot import export_db, PgConfig as SnapshotCfg  # type: ignore[import]
 
     snap_cfg = SnapshotCfg(
@@ -121,7 +121,7 @@ def _take_backup(cfg: PgConfig, backup_dir: Path) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Core reset + seed logic
+# 核心重置 + 种子逻辑
 # ---------------------------------------------------------------------------
 
 DROP_TABLES_SQL = """
@@ -131,7 +131,7 @@ DROP TABLE IF EXISTS schema_migrations CASCADE;
 
 
 def _reset_schema(dsn: str, dry_run: bool) -> None:
-    """Drop all application tables so migrations start from zero."""
+    """删除所有应用表，使迁移从零开始。"""
     import psycopg  # type: ignore[import]
 
     print("[init] Dropping existing tables (user_info, schema_migrations)…")
@@ -145,13 +145,13 @@ def _reset_schema(dsn: str, dry_run: bool) -> None:
 
 
 def _run_migrations(dry_run: bool) -> None:
-    """Re-apply all versioned migrations via the app's migration module."""
+    """通过应用的迁移模块重新应用所有版本化迁移。"""
     print("[init] Running schema migrations…")
     if dry_run:
         print("[dry-run] Would call run_migrations() — skipped.")
         return
 
-    # We need a Flask app context because get_db_connection() reads current_app.config
+    # 需要 Flask 应用上下文，因为 get_db_connection() 读取 current_app.config
     from run import app  # type: ignore[import]
     from app.db.migration import run_migrations  # type: ignore[import]
 
@@ -167,12 +167,12 @@ def _seed_admin(
     email: str,
     dry_run: bool,
 ) -> None:
-    """Insert the default admin user."""
+    """插入默认管理员用户。"""
     import psycopg  # type: ignore[import]
     from app.auth.passwords import hash_password  # type: ignore[import]
     from app.auth.validation import validate_username, validate_password, validate_email  # type: ignore[import]
 
-    # Validate inputs before touching the DB
+    # 在操作数据库之前验证输入
     ok, msg = validate_username(username)
     if not ok:
         print(f"[error] Invalid admin username: {msg}")
@@ -210,7 +210,7 @@ def _seed_admin(
 
 
 # ---------------------------------------------------------------------------
-# CLI
+# 命令行接口
 # ---------------------------------------------------------------------------
 
 DEFAULT_CONF = BACKEND_DIR / "conf" / "global.conf"
@@ -232,7 +232,7 @@ def _confirm(prompt: str) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="init_db",
-        description="Reset the database, re-run migrations, and seed a default admin user.",
+        description="重置数据库，重新运行迁移，并创建默认管理员用户。",
     )
     parser.add_argument("--conf",     default=str(DEFAULT_CONF), help="Path to global.conf")
     parser.add_argument("--host",     default=None)
@@ -272,11 +272,11 @@ def main() -> int:
         db=args.db,
     )
 
-    # Build psycopg DSN string
+    # 构建 psycopg DSN 字符串
     auth = f"{cfg.user}:{cfg.password}@" if cfg.password else f"{cfg.user}@"
     dsn = f"postgresql://{auth}{cfg.host}:{cfg.port}/{cfg.db}"
 
-    # ── Summary banner ──────────────────────────────────────────────────────
+    # ── 摘要横幅 ──────────────────────────────────────────────────────
     print("=" * 60)
     print("  init_db — Database Reset & Seed")
     print("=" * 60)
@@ -295,7 +295,7 @@ def main() -> int:
             print("[aborted] No changes were made.")
             return 0
 
-    # ── Step 1: Backup ──────────────────────────────────────────────────────
+    # ── 步骤 1：备份 ──────────────────────────────────────────────────────
     if not args.no_backup and not args.dry_run:
         print("[init] Taking backup snapshot before reset…")
         try:
@@ -307,13 +307,13 @@ def main() -> int:
         if args.dry_run:
             print("[dry-run] Would take backup snapshot — skipped.")
 
-    # ── Step 2: Drop tables ─────────────────────────────────────────────────
+    # ── 步骤 2：删除表 ─────────────────────────────────────────────────
     _reset_schema(dsn, dry_run=args.dry_run)
 
-    # ── Step 3: Re-run migrations ───────────────────────────────────────────
+    # ── 步骤 3：重新运行迁移 ───────────────────────────────────────────
     _run_migrations(dry_run=args.dry_run)
 
-    # ── Step 4: Seed admin user ─────────────────────────────────────────────
+    # ── 步骤 4：创建管理员用户 ─────────────────────────────────────────────
     _seed_admin(
         dsn=dsn,
         username=args.admin_username,
@@ -322,7 +322,7 @@ def main() -> int:
         dry_run=args.dry_run,
     )
 
-    # ── Done ────────────────────────────────────────────────────────────────
+    # ── 完成 ────────────────────────────────────────────────────────────────
     print()
     print("=" * 60)
     if args.dry_run:

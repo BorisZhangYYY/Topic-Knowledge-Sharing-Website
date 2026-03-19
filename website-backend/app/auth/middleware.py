@@ -14,11 +14,11 @@ _UNAUTHORIZED: Tuple[Dict[str, str], int] = ({"message": "unauthorized"}, 401)
 
 
 def require_auth(fn: F) -> F:
-    """Decorator that enforces JWT Bearer authentication on a resource method.
+    """强制在资源方法上使用 JWT Bearer 认证的装饰器。
 
-    Usage
+    用法
     -----
-    Apply to any Flask-RESTful resource method (``get``, ``post``, etc.):
+    应用于任何 Flask-RESTful 资源方法（``get``、``post`` 等）：
 
     .. code-block:: python
 
@@ -28,25 +28,25 @@ def require_auth(fn: F) -> F:
                 user = g.current_user  # {"user_id": ..., "username": ...}
                 ...
 
-    Behaviour
-    ---------
-    - Expects an ``Authorization: Bearer <token>`` header.
-    - Decodes and verifies the token using :func:`app.auth.jwt.decode_token`
-      with ``current_app.config["SECRET_KEY"]``.
-    - On success, stores the parsed identity in ``flask.g.current_user`` as::
+    行为
+    ----
+    - 期望 ``Authorization: Bearer <token>`` 请求头。
+    - 使用 :func:`app.auth.jwt.decode_token` 和 ``current_app.config["SECRET_KEY"]``
+      解码并验证令牌。
+    - 成功时，将解析的身份存储在 ``flask.g.current_user`` 中，格式为::
 
           {"user_id": str, "username": str}
 
-      and calls the wrapped function normally.
-    - On any failure (missing header, wrong scheme, expired token, bad
-      signature, missing claims), returns ``{"message": "unauthorized"}``
-      with HTTP 401 without calling the wrapped function.
+      然后正常调用被包装的函数。
+    - 任何失败（缺少请求头、错误的 scheme、过期的令牌、错误的
+      签名、缺少声明）时，返回 ``{"message": "unauthorized"}``
+      和 HTTP 401，不调用被包装的函数。
 
     Args:
-        fn: The resource method to protect.
+        fn: 要保护的资源方法。
 
     Returns:
-        The wrapped method with authentication enforcement applied.
+        应用了认证强制执行的包装方法。
     """
 
     @functools.wraps(fn)
