@@ -30,7 +30,6 @@ def register_api_resources(api: Api) -> None:
     api.add_resource(ResetPasswordResource, "/api/auth/reset_success")
 
     # 文章类资源
-    api.add_resource(CreateDraftResoource, "/api/articles/drafts")
+    api.add_resource(CreateDraftResource, "/api/articles/drafts")
 
     
-
