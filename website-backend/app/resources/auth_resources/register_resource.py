@@ -11,8 +11,8 @@ from app.auth.passwords import hash_password
 from app.auth.validation import validate_email, validate_password, validate_username
 from app.common_func.validation import require_json_fields
 from app.db.connection import get_db_connection
-from app.db.migration import run_migrations
-from app.db.user_info_model import USERS_TABLE_NAME
+from app.db.schema import ensure_core_tables
+from app.db.user_info_model import UserInfo
 
 
 class RegisterResource(Resource):
@@ -62,7 +62,7 @@ class RegisterResource(Resource):
         if not valid_email:
             return {"message": "validation_error", "errors": {"email": email_err}}, 400
 
-        run_migrations()
+        ensure_core_tables()
         password_hash: str = hash_password(password)
 
         try:
@@ -71,7 +71,7 @@ class RegisterResource(Resource):
                     with conn.cursor() as cur:
                         cur.execute(
                             f"""
-                            INSERT INTO {USERS_TABLE_NAME}
+                            INSERT INTO {UserInfo.TABLE_NAME}
                                 (username, password_hash, email)
                             VALUES
                                 (%s, %s, %s)

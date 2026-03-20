@@ -1,7 +1,7 @@
 """
 init_db.py - 数据库初始化助手
 
-将目标数据库重置为干净状态，重新应用所有模式迁移，
+将目标数据库重置为干净状态，重新创建核心表，
 并创建一个默认管理员用户。
 
 使用方式
@@ -23,8 +23,8 @@ init_db.py - 数据库初始化助手
 --------
 1. 连接到 global.conf 中定义的数据库（或通过 CLI 参数指定）。
 2. 在操作之前自动备份快照到 backups/ 目录。
-3. 删除所有应用表（user_info, schema_migrations），重新开始。
-4. 通过 migration.py 重新运行所有版本化迁移 → 重建完整模式。
+3. 删除所有应用表（user_info, article_info），重新开始。
+4. 通过 app.db.schema 重新创建核心表结构。
 5. 创建一个默认管理员用户（用户名/密码/邮箱可配置）。
 6. 打印执行摘要。
 
@@ -45,6 +45,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from app.db.schema import SCHEMA_TABLES  # type: ignore[import]
 
 # ---------------------------------------------------------------------------
 # 确保后端根目录在 sys.path 中，以便我们可以从项目根目录运行脚本时
@@ -124,40 +125,44 @@ def _take_backup(cfg: PgConfig, backup_dir: Path) -> Path:
 # 核心重置 + 种子逻辑
 # ---------------------------------------------------------------------------
 
-DROP_TABLES_SQL = """
-DROP TABLE IF EXISTS user_info CASCADE;
-DROP TABLE IF EXISTS schema_migrations CASCADE;
-"""
+def _build_drop_tables_sql() -> str:
+    """根据 schema 中的表定义构建 drop 语句。"""
+
+    lines = [f"DROP TABLE IF EXISTS {table.table_name} CASCADE;" for table in reversed(SCHEMA_TABLES)] # 倒序删除，防止外键依赖问题报错
+    return "\n".join(lines)
 
 
 def _reset_schema(dsn: str, dry_run: bool) -> None:
-    """删除所有应用表，使迁移从零开始。"""
+    """删除所有应用表，使重建从零开始。"""
+
+    drop_tables_sql = _build_drop_tables_sql()
+    table_names = ", ".join(table.table_name for table in SCHEMA_TABLES)
+    print(f"[init] Dropping existing tables ({table_names})…")
+    if dry_run:
+        print(f"[dry-run] Would execute:\n{drop_tables_sql.strip()}")
+        return
     import psycopg  # type: ignore[import]
 
-    print("[init] Dropping existing tables (user_info, schema_migrations)…")
-    if dry_run:
-        print(f"[dry-run] Would execute:\n{DROP_TABLES_SQL.strip()}")
-        return
     with psycopg.connect(dsn, connect_timeout=5) as conn:
         with conn.cursor() as cur:
-            cur.execute(DROP_TABLES_SQL)
+            cur.execute(drop_tables_sql)
     print("[init] Tables dropped.")
 
 
-def _run_migrations(dry_run: bool) -> None:
-    """通过应用的迁移模块重新应用所有版本化迁移。"""
-    print("[init] Running schema migrations…")
+def _ensure_schema(dry_run: bool) -> None:
+    """通过应用的 schema 模块确保核心表存在。"""
+    print("[init] Ensuring core tables…")
     if dry_run:
-        print("[dry-run] Would call run_migrations() — skipped.")
+        print("[dry-run] Would call ensure_core_tables() — skipped.")
         return
 
     # 需要 Flask 应用上下文，因为 get_db_connection() 读取 current_app.config
     from run import app  # type: ignore[import]
-    from app.db.migration import run_migrations  # type: ignore[import]
+    from app.db.schema import ensure_core_tables  # type: ignore[import]
 
     with app.app_context():
-        run_migrations()
-    print("[init] Migrations applied.")
+        ensure_core_tables()
+    print("[init] Core tables are ready.")
 
 
 def _seed_admin(
@@ -168,7 +173,6 @@ def _seed_admin(
     dry_run: bool,
 ) -> None:
     """插入默认管理员用户。"""
-    import psycopg  # type: ignore[import]
     from app.auth.passwords import hash_password  # type: ignore[import]
     from app.auth.validation import validate_username, validate_password, validate_email  # type: ignore[import]
 
@@ -200,6 +204,7 @@ def _seed_admin(
     if dry_run:
         print(f"[dry-run] Would insert admin user '{username}' — skipped.")
         return
+    import psycopg  # type: ignore[import]
 
     with psycopg.connect(dsn, connect_timeout=5) as conn:
         with conn.cursor() as cur:
@@ -232,7 +237,7 @@ def _confirm(prompt: str) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="init_db",
-        description="重置数据库，重新运行迁移，并创建默认管理员用户。",
+        description="重置数据库，重建核心表，并创建默认管理员用户。",
     )
     parser.add_argument("--conf",     default=str(DEFAULT_CONF), help="Path to global.conf")
     parser.add_argument("--host",     default=None)
@@ -310,8 +315,8 @@ def main() -> int:
     # ── 步骤 2：删除表 ─────────────────────────────────────────────────
     _reset_schema(dsn, dry_run=args.dry_run)
 
-    # ── 步骤 3：重新运行迁移 ───────────────────────────────────────────
-    _run_migrations(dry_run=args.dry_run)
+    # ── 步骤 3：重建核心表 ─────────────────────────────────────────────
+    _ensure_schema(dry_run=args.dry_run)
 
     # ── 步骤 4：创建管理员用户 ─────────────────────────────────────────────
     _seed_admin(

@@ -10,7 +10,7 @@ from app.auth.jwt import create_access_token
 from app.auth.passwords import verify_password
 from app.common_func.validation import require_json_fields
 from app.db.connection import get_db_connection
-from app.db.user_info_model import USERS_TABLE_NAME
+from app.db.user_info_model import UserInfo
 
 # ---------------------------------------------------------------------------
 # 阈值：如果 last_login_at 为 NULL（首次登录）或超过 7 天未登录，
@@ -82,7 +82,7 @@ class LoginResource(Resource):
                     cur.execute(
                         f"""
                         SELECT id, password_hash, last_login_at
-                        FROM   {USERS_TABLE_NAME}
+                        FROM   {UserInfo.TABLE_NAME}
                         WHERE  username = %s
                         """,
                         (username,),
@@ -128,7 +128,7 @@ class LoginResource(Resource):
                     with conn.cursor() as cur:
                         cur.execute(
                             f"""
-                            UPDATE {USERS_TABLE_NAME}
+                            UPDATE {UserInfo.TABLE_NAME}
                             SET    last_login_at = NOW()
                             WHERE  id = %s
                             """,

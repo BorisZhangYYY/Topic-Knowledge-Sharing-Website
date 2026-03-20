@@ -9,7 +9,7 @@ from app.auth.passwords import hash_password, verify_password
 from app.auth.validation import validate_email, validate_password
 from app.common_func.validation import require_json_fields
 from app.db.connection import get_db_connection
-from app.db.user_info_model import USERS_TABLE_NAME
+from app.db.user_info_model import UserInfo
 from app.resources.auth_resources.email_verify_resource import is_otp_valid, otp_store
 
 
@@ -106,7 +106,7 @@ class ResetPasswordResource(Resource):
                     cur.execute(
                         f"""
                         SELECT id, password_hash
-                        FROM   {USERS_TABLE_NAME}
+                        FROM   {UserInfo.TABLE_NAME}
                         WHERE  email = %s
                         """,
                         (email,),
@@ -146,7 +146,7 @@ class ResetPasswordResource(Resource):
                     with conn.cursor() as cur:
                         cur.execute(
                             f"""
-                            UPDATE {USERS_TABLE_NAME}
+                            UPDATE {UserInfo.TABLE_NAME}
                             SET    password_hash = %s
                             WHERE  id = %s
                             """,

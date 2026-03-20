@@ -10,7 +10,7 @@ from app.auth.jwt import decode_token
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-_UNAUTHORIZED: Tuple[Dict[str, str], int] = ({"message": "unauthorized"}, 401)
+_UNAUTHORIZED: Tuple[Dict[str, str], int] = ({"message": "unauthorized"}, 403)
 
 
 def require_auth(fn: F) -> F:
@@ -40,7 +40,7 @@ def require_auth(fn: F) -> F:
       然后正常调用被包装的函数。
     - 任何失败（缺少请求头、错误的 scheme、过期的令牌、错误的
       签名、缺少声明）时，返回 ``{"message": "unauthorized"}``
-      和 HTTP 401，不调用被包装的函数。
+      和 HTTP 403, 不调用被包装的函数。
 
     Args:
         fn: 要保护的资源方法。
