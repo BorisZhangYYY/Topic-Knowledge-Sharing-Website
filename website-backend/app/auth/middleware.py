@@ -35,7 +35,7 @@ def require_auth(fn: F) -> F:
       解码并验证令牌。
     - 成功时，将解析的身份存储在 ``flask.g.current_user`` 中，格式为::
 
-          {"user_id": str, "username": str}
+          {"user_id": int, "username": str}
 
       然后正常调用被包装的函数。
     - 任何失败（缺少请求头、错误的 scheme、过期的令牌、错误的
@@ -68,14 +68,18 @@ def require_auth(fn: F) -> F:
         except Exception:
             return _UNAUTHORIZED
 
-        user_id: Any = payload.get("sub") 
+        user_id_raw: Any = payload.get("sub") 
         username: Any = payload.get("username")
 
-        if user_id is None or username is None:
+        if user_id_raw is None or username is None:
+            return _UNAUTHORIZED
+        try:
+            user_id: int = int(user_id_raw)
+        except Exception:
             return _UNAUTHORIZED
 
         g.current_user = {
-            "user_id": str(user_id),
+            "user_id": user_id,
             "username": str(username),
         }
 

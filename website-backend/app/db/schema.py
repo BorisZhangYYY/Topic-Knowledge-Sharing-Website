@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS user_info (
 CREATE TABLE IF NOT EXISTS article_info (
     id               BIGSERIAL    PRIMARY KEY,
     author_id        BIGINT       NOT NULL REFERENCES user_info(id) ON DELETE CASCADE,
+    author_name      TEXT         NOT NULL DEFAULT '',
     title            TEXT         NOT NULL DEFAULT '',
     status           TEXT         NOT NULL DEFAULT 'draft',
     markdown_source  TEXT         NOT NULL DEFAULT '',
@@ -81,3 +82,23 @@ def ensure_core_tables() -> None:
         with conn.cursor() as cur:
             for sql in core_schema_ddls:
                 cur.execute(sql)
+
+
+def main() -> int:
+    """执行核心表建表入口。
+
+    Args:
+        无。
+
+    Returns:
+        退出码。
+    """
+    from run import app
+
+    with app.app_context():
+        ensure_core_tables()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

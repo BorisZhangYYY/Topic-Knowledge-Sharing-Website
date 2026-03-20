@@ -80,7 +80,7 @@ class RegisterResource(Resource):
                             (username, password_hash, email),
                         )
                         row = cur.fetchone()
-            user_id: int = int(row[0]) if row else 0
+            user_id: int = int(row[0]) if row else 0 # 获取插入的用户ID
         except psycopg.errors.UniqueViolation as exc:
             detail: str = str(exc).lower()
             if "email" in detail:
@@ -91,7 +91,7 @@ class RegisterResource(Resource):
 
         secret_key: str = str(current_app.config.get("SECRET_KEY", ""))
         token: str = create_access_token(
-            subject=str(user_id),
+            subject=user_id,
             username=username,
             secret_key=secret_key,
         )

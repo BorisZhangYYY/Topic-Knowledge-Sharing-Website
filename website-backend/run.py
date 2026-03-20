@@ -8,15 +8,11 @@ from flask import Flask, Response, jsonify
 from conf.config import Config
 from app.common_func.api import create_api
 
-app = Flask(__name__)
-app.config.from_object(Config())
-create_api(app)
+import psycopg
 
-try:
-    import psycopg
-except Exception:  # pragma: no cover
-    psycopg = None  # type: ignore[assignment]
-
+app = Flask(__name__) # 创建Flask应用实例
+app.config.from_object(Config()) # 导入配置类Config的配置项
+create_api(app) # 创建API路由
 
 def create_app() -> Flask:
     """创建并配置 Flask 应用。
@@ -30,7 +26,7 @@ def create_app() -> Flask:
 def index() -> Response:
     """返回基本应用信息。"""
     payload: Dict[str, Any] = {
-        "app": "hot-knowledge-backend",
+        "app": "Noosphere-backend",
         "debug": app.config.get("DEBUG", False),
         "database_dsn": app.config.get("DATABASE_DSN", ""),
     }

@@ -7,7 +7,7 @@ import jwt
 
 
 def create_access_token(
-    subject: str,
+    subject: int,
     username: str,
     secret_key: str,
     expires_in_seconds: int = 7 * 24 * 60 * 60,
@@ -16,7 +16,7 @@ def create_access_token(
     """创建 JWT 访问令牌。
 
     Args:
-        subject: 主题标识符，为用户 ID 字符串。
+        subject: 主题标识符，为用户 ID。
         username: 用户名。
         secret_key: JWT 签名密钥。
         expires_in_seconds: 令牌有效期（秒）。
