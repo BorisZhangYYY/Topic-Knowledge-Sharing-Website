@@ -92,8 +92,8 @@ class RegisterResource(Resource):
         secret_key: str = str(current_app.config.get("SECRET_KEY", ""))
         token: str = create_access_token(
             subject=str(user_id),
+            username=username,
             secret_key=secret_key,
-            extra_claims={"username": username},
         )
 
         return (

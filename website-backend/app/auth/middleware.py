@@ -49,9 +49,9 @@ def require_auth(fn: F) -> F:
         应用了认证强制执行的包装方法。
     """
 
-    @functools.wraps(fn)
+    @functools.wraps(fn) # 保留被装饰函数的元信息
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        auth_header: str | None = request.headers.get("Authorization")
+        auth_header: str | None = request.headers.get("Authorization")  # 从请求头中取Authorization字段
 
         if not auth_header:
             return _UNAUTHORIZED
@@ -68,7 +68,7 @@ def require_auth(fn: F) -> F:
         except Exception:
             return _UNAUTHORIZED
 
-        user_id: Any = payload.get("sub")
+        user_id: Any = payload.get("sub") 
         username: Any = payload.get("username")
 
         if user_id is None or username is None:

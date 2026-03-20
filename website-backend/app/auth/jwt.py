@@ -8,6 +8,7 @@ import jwt
 
 def create_access_token(
     subject: str,
+    username: str,
     secret_key: str,
     expires_in_seconds: int = 7 * 24 * 60 * 60,
     extra_claims: Optional[Dict[str, Any]] = None,
@@ -15,7 +16,8 @@ def create_access_token(
     """创建 JWT 访问令牌。
 
     Args:
-        subject: 主题标识符，通常是用户 ID 或用户名。
+        subject: 主题标识符，为用户 ID 字符串。
+        username: 用户名。
         secret_key: JWT 签名密钥。
         expires_in_seconds: 令牌有效期（秒）。
         extra_claims: 可选的额外声明，嵌入到令牌中。
@@ -26,11 +28,17 @@ def create_access_token(
     now = datetime.now(timezone.utc)
     payload: Dict[str, Any] = {
         "sub": subject,
+        "username": username,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(seconds=expires_in_seconds)).timestamp()),
     }
     if extra_claims:
-        payload.update(extra_claims)
+        sanitized_claims: Dict[str, Any] = {
+            k: v
+            for k, v in extra_claims.items()
+            if k not in ("sub", "username", "iat", "exp")
+        }
+        payload.update(sanitized_claims)
     token = jwt.encode(payload, secret_key, algorithm="HS256")
     return str(token)
 
